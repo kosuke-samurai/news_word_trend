@@ -17,3 +17,5 @@
 
 ## 写経チェック
 - オリジナル
+
+[ https://kosuke-samurai.github.io/news_word_trend/]
