@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <title>ニュースプログラム</title>
+
+
+</head>
+
+<body>
+
+    <header>
+        <h1>きょうのエンタメニュース</h1>
+        <h2 class="header">今、ホットなワードをチェック</h2>
+    </header>
+    <main>
+
+        <h2>ワードクラウド：話題のニュースワード</h2>
+        <div id="chartdiv" class="chartdiv"></div>
+        <div class="output">
+            <h2>トップニュース20</h2>
+            <div id="output"></div>
+        </div>
+    </main>
+
+    <footer>©たかはし,いらすとや</footer>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://newsapi.org/v2/top-headlines?country=jp&category=entertainment&apiKey=＜your key＞"></script>
+
+
+    <script type="text/javascript" src="rakutenma.js" charset="UTF-8"></script>
+    <script type="text/javascript" src="model_ja.js" charset="UTF-8"></script>
+
+    <script type="text/javascript" src="model_zh.js" charset="UTF-8"></script>
+    <script type="text/javascript" src="zh_chardic.js" charset="UTF-8"></script>
+
+    <script type="text/javascript" src="hanzenkaku.js" charset="UTF-8"></script>
+
+    <script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+    <script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+    <script src="https://cdn.amcharts.com/lib/4/plugins/wordCloud.js"></script>
+    <script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+    <script type="text/javascript" charset="UTF-8">
+
+
+
+
+
+        //Example request 
+        const url = 'https://newsapi.org/v2/top-headlines?' +
+            'country=jp&' +
+            'category=entertainment&' +
+            'apiKey=1f4669823b8f4c1ba26f9618dfa134a3';
+        const req = new Request(url);
+
+        fetch(req)
+            .then(function (response) {
+                console.log(response);
+                return response.json();
+
+            })
+            .then(function (json) {
+                console.log(json);
+                console.log(json.articles);
+                console.log(json.articles[0].title);
+
+                const array = [];
+                const list = [];
+
+                for (let i = 0; i < json.articles.length; i++) {
+
+                    array.push(
+                        `<a href = "${json.articles[i].url}"><p>${json.articles[i].title}</p></a>`)
+                }
+
+                for (let i = 0; i < json.articles.length; i++) {
+
+                    rma_ja = new RakutenMA(model_ja);
+                    rma_ja.featset = RakutenMA.default_featset_ja;
+                    rma_ja.hash_func = RakutenMA.create_hash_func(15);
+
+
+                    rma_zh = new RakutenMA(model_zh);
+                    rma_zh.featset = RakutenMA.default_featset_zh;
+                    rma_zh.hash_func = RakutenMA.create_hash_func(15);
+                    rma_zh.ctype_func = RakutenMA.create_ctype_chardic_func(chardic);
+
+                    let textarea = json.articles[i].title;
+                    console.log(textarea);
+
+                    let tokens = rma_ja.tokenize(HanZenKaku.hs2fs(HanZenKaku.hw2fw(HanZenKaku.h2z(textarea))));
+                    console.log(tokens);
+
+                    for (let i = 0; i < tokens.length; i++) {
+                        console.log(tokens[i]);
+                        if (tokens[i][1] === "N-n" || tokens[i][1] === "N-nc" || tokens[i][1] === "N-pn") {
+                            console.log(tokens[i][0]);
+                            /*これをどう使うか↑*/
+                            list.push(tokens[i][0]);
+
+                        };
+                    };
+
+                };
+
+                $("#output").html(array);
+
+                console.log(list);
+
+
+                // Themes begin
+                am4core.useTheme(am4themes_animated);
+                // Themes end
+
+                var chart = am4core.create("chartdiv", am4plugins_wordCloud.WordCloud);
+                var series = chart.series.push(new am4plugins_wordCloud.WordCloudSeries());
+
+                series.accuracy = 4;
+                series.step = 15;
+                series.rotationThreshold = 0.7;
+                series.maxCount = 500;
+                series.minWordLength = 2;
+                series.labels.template.margin(1, 1, 1, 1);
+                series.maxFontSize = am4core.percent(30);
+
+                series.text = `<p>${list}</p>`;
+
+                series.colors = new am4core.ColorSet();
+                series.colors.passOptions = {}; // makes it loop
+
+                series.excludeWords = ["エキサイト", "ニュース", "スポーツ", "報知", "JIJIPRESS", "時事", "週刊女性", "PRIME", "テレ朝", "Smart", "FLASH", "NHK", "NEWS", "TBS"];//媒体名排除
+
+
+                //series.labelsContainer.rotation = 45;
+                series.angles = [0, -90];
+                series.fontWeight = "700"
+
+                setInterval(function () {
+                    series.dataItems.getIndex(Math.round(Math.random() * (series.dataItems.length - 1))).setValue("value", Math.round(Math.random() * 10));
+                }, 10000)
+            })
+
+            .catch(function (error) {
+                //リクエストが失敗したときに実行したい処理
+                console.log(error);
+            })
+            .finally(function () {
+                //成功・失敗に関わらず実行したい処理
+                //(あってもなくても良い)
+            })
+
+
+
+
+
+    </script>
+</body>
+
+</html>
